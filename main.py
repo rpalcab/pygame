@@ -5,26 +5,70 @@ from time import sleep
 ## Functions
 def display_score():
     current_time = pygame.time.get_ticks() // 500 - start_time
-    score_surf = font.render(f'Score: {current_time}', False, (64,64,64))    # Text to image, color in HEX format. Do NOT use convert
+    score_surf = font_score.render(f'Score: {current_time}', False, (64,64,64))    # Text to image, color in HEX format. Do NOT use convert
     score_rect = score_surf.get_rect(midtop = (400, 20))
     screen.blit(score_surf, score_rect)
+    return current_time
+
+def set_bg():
+    screen.blit(sky_bg, (0,0))                  # Sets background images
+    screen.blit(ground_bg, (0,300))
     return None
+
+def snail_mv(current_time):
+    ini_speed = 6
+    extra_speed = (current_time // 20)          # Snail speed increases with time
+    snail_rect.x -= ini_speed + extra_speed             # Moves snail to the left
+    if snail_rect.right <= 0: snail_rect.left = 800     # Snail goes back to the right
+    screen.blit(snail_surf, snail_rect)      # Places snail
+
+def player_mv(player_gravity):
+    player_gravity += 1
+    player_rect.y += player_gravity
+    if player_rect.bottom >= 300: player_rect.bottom = 300
+    screen.blit(player_surf, player_rect)    # Places player image and rectangle
+    return player_rect, player_gravity
+
+def end_screen(current_time):
+    current_time = pygame.time.get_ticks() // 1000 - start_time
+    if current_time%2 == 1:
+        screen.fill('Black')
+        screen.blit(title_surf, title_rect)
+        screen.blit(space_surf, space_rect)
+        screen.blit(player_stand, player_stand_rect)
+    else:
+        screen.fill('Black')
+        screen.blit(title_surf, title_rect)
+        screen.blit(player_stand, player_stand_rect)
+    return current_time
 
 ## Initial setup
 pygame.init()       # Starts pygame
 screen = pygame.display.set_mode((800,400))     # Creates game window and defines size
 pygame.display.set_caption('Runner')            # Names game window
-game_active  = True
+FPS=60
+game_active  = False
 start_time = 0
 
 ## Clock
 clock = pygame.time.Clock()                     # Creates clock object
-font = pygame.font.Font('font/Pixeltype.ttf', 50)  # Creates text object
+current_time = pygame.time.get_ticks() // 500 - start_time
+
+## Fonts
+font_title = pygame.font.Font('font/Pixeltype.ttf', 75)
+font_score = pygame.font.Font('font/Pixeltype.ttf', 50)  # Creates text object
 
 ## Images
-#Background
+# Game background
 sky_bg = pygame.image.load('graphics/sky.png').convert()          # Import background images. .convert to make it lighter
 ground_bg = pygame.image.load('graphics/ground.png').convert()
+
+# Start/end background
+title_surf = font_title.render(f'Runner', False, 'White')    # Text to image, color in HEX format. Do NOT use convert
+title_rect = title_surf.get_rect(midtop = (400, 20))
+
+space_surf = font_score.render(f'Press space to start', False, 'White')
+space_rect = space_surf.get_rect(midtop = (400, 325))
 
 # Characters
 snail_surf = pygame.image.load('graphics/snail/snail1.png').convert_alpha()  # Convert_alpha to respect transparent bg
@@ -33,6 +77,11 @@ snail_rect = snail_surf.get_rect(bottomleft = (800, 300))
 player_surf = pygame.image.load('graphics/player/player_walk_1.png').convert_alpha()
 player_rect = player_surf.get_rect(midbottom = (80, 300))          # Creates player rectangle for collisions etc. Topleft indicates reference of rectangle (corner topleft in this case)
 player_gravity = 0
+
+player_stand = pygame.image.load('graphics/player/player_stand.png').convert_alpha()
+# player_stand = pygame.transform.rotozoom(player_stand, 0, 2)
+player_stand = pygame.transform.scale2x(player_stand)
+player_stand_rect = player_stand.get_rect(center = ((400,200))) 
 
 # Game starts
 while True:                                     # Avoids game from exiting, infinite loop
@@ -69,34 +118,28 @@ while True:                                     # Avoids game from exiting, infi
 
     if game_active:
         # Sets background
-        screen.blit(sky_bg, (0,0))                  # Sets background images
-        screen.blit(ground_bg, (0,300))
+        set_bg()
         
         # Sets score
-        display_score()
+        current_time = display_score()
 
         # Snail position and movement
-        snail_rect.x -= 6                           # Moves snail to the left
-        if snail_rect.right <= 0: snail_rect.left = 800     # Snail goes back to the right
-        screen.blit(snail_surf, snail_rect)      # Places snail
+        snail_mv(current_time)
 
         # Player position and movement
-        player_gravity += 1
-        player_rect.y += player_gravity
-        if player_rect.bottom >= 300: player_rect.bottom = 300
-        screen.blit(player_surf, player_rect)    # Places player image and rectangle
+        player_rect, player_gravity = player_mv(player_gravity)
 
         # Player/Snail collision
         if player_rect.colliderect(snail_rect):        # Check if player collides with snail
+            ## IDEA: Make player blink and then black screen
             game_active = False
-    
+            ## IDEA: Make gradient black screen
     else:
-        sleep(1)
-        screen.fill('Black')
+        current_time = end_screen(current_time)
     
     # Time passes
     pygame.display.update()
-    clock.tick(60)                              # Max of 60 times per second, advances in time
+    clock.tick(FPS)                              # Max of 60 times per second, advances in time
 
 
 # Cool thing I'm probably gonna use in the future:
