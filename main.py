@@ -21,6 +21,7 @@ def snail_mv(current_time):
     snail_rect.x -= ini_speed + extra_speed             # Moves snail to the left
     if snail_rect.right <= 0: snail_rect.left = 800     # Snail goes back to the right
     screen.blit(snail_surf, snail_rect)      # Places snail
+    return None
 
 def player_mv(player_gravity):
     player_gravity += 1
@@ -29,17 +30,14 @@ def player_mv(player_gravity):
     screen.blit(player_surf, player_rect)    # Places player image and rectangle
     return player_rect, player_gravity
 
-def end_screen(current_time):
+def end_screen(current_time, score_surf, score_rect):
     current_time = pygame.time.get_ticks() // 1000 - start_time
+    screen.fill('Black')
+    screen.blit(title_surf, title_rect) 
+    screen.blit(player_stand, player_stand_rect)
+    screen.blit(score_surf, score_rect)   
     if current_time%2 == 1:
-        screen.fill('Black')
-        screen.blit(title_surf, title_rect)
         screen.blit(space_surf, space_rect)
-        screen.blit(player_stand, player_stand_rect)
-    else:
-        screen.fill('Black')
-        screen.blit(title_surf, title_rect)
-        screen.blit(player_stand, player_stand_rect)
     return current_time
 
 ## Initial setup
@@ -57,6 +55,11 @@ current_time = pygame.time.get_ticks() // 500 - start_time
 ## Fonts
 font_title = pygame.font.Font('font/Pixeltype.ttf', 75)
 font_score = pygame.font.Font('font/Pixeltype.ttf', 50)  # Creates text object
+
+## Score
+highest_score = 0
+score_surf = font_score.render(f'Highest score: {highest_score}', False, 'White')
+score_rect = score_surf.get_rect(midleft = (25, 40))
 
 ## Images
 # Game background
@@ -133,9 +136,13 @@ while True:                                     # Avoids game from exiting, infi
         if player_rect.colliderect(snail_rect):        # Check if player collides with snail
             ## IDEA: Make player blink and then black screen
             game_active = False
+            if current_time > highest_score:
+                highest_score = current_time
+                score_surf = font_score.render(f'Highest score: {highest_score}', False, 'White')
+                score_rect = score_surf.get_rect(midleft = (25, 40))
             ## IDEA: Make gradient black screen
     else:
-        current_time = end_screen(current_time)
+        current_time = end_screen(current_time, score_surf, score_rect)
     
     # Time passes
     pygame.display.update()
